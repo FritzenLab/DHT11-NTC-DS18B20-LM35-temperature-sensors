@@ -1,0 +1,536 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ESP32 Sensor Monitor</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@2.44.0/tabler-icons.min.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Rajdhani:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #0d0f0e;
+      --surface: #141916;
+      --card: #1a1f1d;
+      --border: #2a332e;
+      --accent: #3ddc84;
+      --accent2: #00bcd4;
+      --warn: #ffb300;
+      --danger: #ef5350;
+      --muted: #4a5550;
+      --text: #c8d8cc;
+      --text2: #6b8070;
+      --mono: 'Share Tech Mono', monospace;
+      --sans: 'Rajdhani', sans-serif;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    html, body {
+      height: 100%;
+      background: #080a09;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: var(--sans);
+    }
+
+    #app {
+      background: var(--bg);
+      width: 100%;
+      max-width: 960px;
+      min-height: 560px;
+      height: 96vh;
+      max-height: 720px;
+      border-radius: 12px;
+      overflow: hidden;
+      color: var(--text);
+      display: flex;
+      flex-direction: column;
+      border: 1px solid var(--border);
+    }
+
+    .topbar {
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      padding: 10px 16px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      flex-wrap: wrap;
+      flex-shrink: 0;
+    }
+    .topbar-left { display: flex; align-items: center; gap: 10px; flex: 1; }
+    .topbar h1 { font-size: 15px; font-weight: 600; letter-spacing: 1.5px; text-transform: uppercase; color: var(--accent); }
+    .topbar h1 span { color: var(--text2); font-weight: 400; }
+
+    .status-dot {
+      width: 8px; height: 8px; border-radius: 50%;
+      background: var(--muted); transition: background .3s; flex-shrink: 0;
+    }
+    .status-dot.connected { background: var(--accent); box-shadow: 0 0 6px var(--accent); }
+
+    .topbar-controls { display: flex; align-items: center; gap: 8px; }
+
+    select, button {
+      background: var(--card);
+      border: 1px solid var(--border);
+      color: var(--text);
+      font-family: var(--mono);
+      font-size: 12px;
+      padding: 5px 10px;
+      border-radius: 4px;
+      cursor: pointer;
+      outline: none;
+      transition: border-color .2s, background .2s;
+    }
+    select:hover, button:hover { border-color: var(--accent); }
+    select option { background: var(--card); }
+    button.primary { background: var(--accent); color: #0d1a12; border-color: var(--accent); font-weight: 700; letter-spacing: .5px; }
+    button.primary:hover { background: #5dff9a; }
+    button.danger { border-color: var(--danger); color: var(--danger); }
+    button.danger:hover { background: #1a0a0a; }
+
+    .main { display: flex; flex: 1; overflow: hidden; min-height: 0; }
+
+    .sidebar {
+      width: 210px;
+      flex-shrink: 0;
+      border-right: 1px solid var(--border);
+      background: var(--surface);
+      display: flex;
+      flex-direction: column;
+      padding: 12px;
+      gap: 10px;
+      overflow-y: auto;
+    }
+
+    .sensor-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 10px 12px;
+      cursor: pointer;
+      transition: border-color .2s, background .2s;
+      position: relative;
+      overflow: hidden;
+    }
+    .sensor-card::before {
+      content: '';
+      position: absolute;
+      left: 0; top: 0; bottom: 0;
+      width: 3px;
+      border-radius: 2px 0 0 2px;
+      background: var(--sensor-color, var(--muted));
+    }
+    .sensor-card:hover { border-color: var(--sensor-color, var(--muted)); }
+    .sensor-card.active { border-color: var(--sensor-color, var(--accent)); background: #1e2622; }
+
+    .sensor-name { font-size: 11px; letter-spacing: 1.5px; text-transform: uppercase; color: var(--text2); font-family: var(--mono); margin-bottom: 4px; }
+    .sensor-value { font-family: var(--mono); font-size: 22px; font-weight: 400; color: var(--sensor-color, var(--text)); line-height: 1; }
+    .sensor-value .unit { font-size: 13px; color: var(--text2); margin-left: 3px; }
+    .sensor-sub { font-size: 11px; color: var(--text2); margin-top: 4px; font-family: var(--mono); }
+
+    .sensor-bar { height: 2px; background: var(--border); border-radius: 1px; margin-top: 8px; overflow: hidden; }
+    .sensor-bar-fill { height: 100%; border-radius: 1px; background: var(--sensor-color, var(--accent)); transition: width .5s cubic-bezier(.4,0,.2,1); }
+
+    .panel { flex: 1; display: flex; flex-direction: column; min-width: 0; }
+
+    .chart-area { flex: 1; padding: 12px; display: flex; flex-direction: column; gap: 10px; min-height: 0; }
+
+    .chart-header { display: flex; align-items: center; justify-content: space-between; gap: 8px; flex-wrap: wrap; }
+    .chart-title { font-size: 11px; letter-spacing: 1.5px; text-transform: uppercase; color: var(--text2); font-family: var(--mono); }
+
+    .chart-legend { display: flex; gap: 12px; flex-wrap: wrap; }
+    .legend-item {
+      display: flex; align-items: center; gap: 5px;
+      font-size: 11px; font-family: var(--mono); color: var(--text2);
+      cursor: pointer; user-select: none; transition: color .2s;
+    }
+    .legend-item:hover { color: var(--text); }
+    .legend-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+
+    #chart { width: 100% !important; border: 1px solid var(--border); border-radius: 6px; background: var(--card); display: block; }
+
+    .log-area { border-top: 1px solid var(--border); display: flex; flex-direction: column; height: 155px; flex-shrink: 0; }
+    .log-header {
+      padding: 6px 12px; display: flex; align-items: center; justify-content: space-between;
+      background: var(--surface); border-bottom: 1px solid var(--border); flex-shrink: 0;
+    }
+    .log-header span { font-size: 10px; letter-spacing: 1.5px; text-transform: uppercase; color: var(--text2); font-family: var(--mono); }
+
+    #log { flex: 1; overflow-y: auto; padding: 6px 12px; font-family: var(--mono); font-size: 11.5px; line-height: 1.6; color: var(--text2); }
+    #log::-webkit-scrollbar { width: 4px; }
+    #log::-webkit-scrollbar-track { background: transparent; }
+    #log::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+    .log-line { display: flex; gap: 10px; }
+    .log-time { color: var(--muted); flex-shrink: 0; }
+    .log-data { color: var(--text); }
+    .log-data.ok { color: var(--accent); }
+    .log-data.warn { color: var(--warn); }
+    .log-data.err { color: var(--danger); }
+
+    .footer {
+      background: var(--surface);
+      border-top: 1px solid var(--border);
+      padding: 5px 16px;
+      display: flex; align-items: center; gap: 16px; flex-wrap: wrap;
+      font-family: var(--mono); font-size: 10.5px; color: var(--muted);
+      flex-shrink: 0;
+    }
+    .footer-stat { display: flex; align-items: center; gap: 5px; }
+    .footer-stat .val { color: var(--text2); }
+  </style>
+</head>
+<body>
+<div id="app">
+  <div class="topbar">
+    <div class="topbar-left">
+      <div class="status-dot" id="dot"></div>
+      <h1>ESP32 <span>// SENSOR MONITOR</span></h1>
+    </div>
+    <div class="topbar-controls" id="ctrl-connect">
+      <select id="baud">
+        <option value="9600">9600</option>
+        <option value="115200" selected>115200</option>
+        <option value="230400">230400</option>
+      </select>
+      <button class="primary" id="btn-connect" onclick="connectSerial()">
+        <i class="ti ti-plug-connected"></i> CONNECT
+      </button>
+    </div>
+    <div class="topbar-controls" id="ctrl-connected" style="display:none">
+      <span id="port-label" style="font-family:var(--mono);font-size:11px;color:var(--accent)"></span>
+      <button id="btn-demo" onclick="toggleDemo()">
+        <i class="ti ti-player-pause" id="demo-icon"></i> PAUSE
+      </button>
+      <button class="danger" onclick="disconnectSerial()">
+        <i class="ti ti-plug"></i> DISCONNECT
+      </button>
+    </div>
+  </div>
+
+  <div class="main">
+    <div class="sidebar">
+      <div class="sensor-card active" id="card-dht" style="--sensor-color:#3ddc84" onclick="focusSensor('dht')">
+        <div class="sensor-name">DHT11</div>
+        <div class="sensor-value" id="val-dht">--<span class="unit">°C</span></div>
+        <div class="sensor-sub" id="sub-dht">Humidity: --%</div>
+        <div class="sensor-bar"><div class="sensor-bar-fill" id="bar-dht" style="width:0%"></div></div>
+      </div>
+      <div class="sensor-card" id="card-ds18" style="--sensor-color:#00bcd4" onclick="focusSensor('ds18')">
+        <div class="sensor-name">DS18B20</div>
+        <div class="sensor-value" id="val-ds18">--<span class="unit">°C</span></div>
+        <div class="sensor-sub" id="sub-ds18">1-Wire precision</div>
+        <div class="sensor-bar"><div class="sensor-bar-fill" id="bar-ds18" style="width:0%"></div></div>
+      </div>
+      <div class="sensor-card" id="card-ntc" style="--sensor-color:#ffb300" onclick="focusSensor('ntc')">
+        <div class="sensor-name">NTC</div>
+        <div class="sensor-value" id="val-ntc">--<span class="unit">°C</span></div>
+        <div class="sensor-sub" id="sub-ntc">Thermistor</div>
+        <div class="sensor-bar"><div class="sensor-bar-fill" id="bar-ntc" style="width:0%"></div></div>
+      </div>
+      <div class="sensor-card" id="card-lm35" style="--sensor-color:#ef5350" onclick="focusSensor('lm35')">
+        <div class="sensor-name">LM35</div>
+        <div class="sensor-value" id="val-lm35">--<span class="unit">°C</span></div>
+        <div class="sensor-sub" id="sub-lm35">Analog linear</div>
+        <div class="sensor-bar"><div class="sensor-bar-fill" id="bar-lm35" style="width:0%"></div></div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="chart-area">
+        <div class="chart-header">
+          <span class="chart-title">Temperature history (60s)</span>
+          <div class="chart-legend">
+            <div class="legend-item" onclick="toggleLine('dht')"><div class="legend-dot" style="background:#3ddc84"></div>DHT11</div>
+            <div class="legend-item" onclick="toggleLine('ds18')"><div class="legend-dot" style="background:#00bcd4"></div>DS18B20</div>
+            <div class="legend-item" onclick="toggleLine('ntc')"><div class="legend-dot" style="background:#ffb300"></div>NTC</div>
+            <div class="legend-item" onclick="toggleLine('lm35')"><div class="legend-dot" style="background:#ef5350"></div>LM35</div>
+          </div>
+        </div>
+        <canvas id="chart"></canvas>
+      </div>
+
+      <div class="log-area">
+        <div class="log-header">
+          <span>Serial output</span>
+          <button onclick="clearLog()" style="font-size:10px;padding:2px 8px">CLEAR</button>
+        </div>
+        <div id="log"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="footer">
+    <div class="footer-stat"><i class="ti ti-clock"></i> Uptime: <span class="val" id="uptime-val">00:00:00</span></div>
+    <div class="footer-stat"><i class="ti ti-activity"></i> Rate: <span class="val" id="rate-val">-- Hz</span></div>
+    <div class="footer-stat"><i class="ti ti-messages"></i> Frames: <span class="val" id="frames-val">0</span></div>
+    <div class="footer-stat" style="margin-left:auto">Web Serial API — Chrome / Edge only</div>
+  </div>
+</div>
+
+<script>
+  /*
+   * ESP32 Sensor Monitor
+   * Reads from Web Serial API (Chrome/Edge 89+)
+   *
+   * Expected serial format (one line per reading):
+   *   DHT11:25.3,DS18B20:25.1,NTC:24.8,LM35:25.0,HUM:55
+   *
+   * Fields can be in any order. HUM is optional.
+   *
+   * Arduino example:
+   *   Serial.print("DHT11:"); Serial.print(dhtTemp, 1);
+   *   Serial.print(",DS18B20:"); Serial.print(ds18Temp, 1);
+   *   Serial.print(",NTC:"); Serial.print(ntcTemp, 1);
+   *   Serial.print(",LM35:"); Serial.print(lm35Temp, 1);
+   *   Serial.print(",HUM:"); Serial.println(dhtHumidity, 0);
+   */
+
+  const COLORS  = { dht: '#3ddc84', ds18: '#00bcd4', ntc: '#ffb300', lm35: '#ef5350' };
+  const SENSORS = ['dht', 'ds18', 'ntc', 'lm35'];
+  const MAX_PTS = 60;
+
+  let port = null, reader = null;
+  let demoTimer = null, demoPaused = false;
+  let frames = 0, startTime = null, upTimer = null, rateCount = 0;
+  let visible = { dht: true, ds18: true, ntc: true, lm35: true };
+
+  // ── Chart setup ──────────────────────────────────────────────────────────────
+  // https://www.chartjs.org/docs/latest/getting-started/
+  const canvas = document.getElementById('chart');
+  const chart = new Chart(canvas, {
+    type: 'line',
+    data: {
+      labels: Array(MAX_PTS).fill(''),
+      datasets: SENSORS.map(s => ({
+        label: s.toUpperCase(),
+        data: Array(MAX_PTS).fill(null),
+        borderColor: COLORS[s],
+        backgroundColor: COLORS[s] + '22',
+        borderWidth: 1.5,
+        pointRadius: 0,
+        tension: 0.4,
+        fill: false,
+      }))
+    },
+    options: {
+      animation: false,
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          mode: 'index', intersect: false,
+          backgroundColor: '#1a1f1d',
+          borderColor: '#2a332e', borderWidth: 1,
+          titleColor: '#6b8070', bodyColor: '#c8d8cc',
+          titleFont: { family: 'Share Tech Mono', size: 10 },
+          bodyFont: { family: 'Share Tech Mono', size: 11 },
+          callbacks: {
+            label: ctx => ' ' + ctx.dataset.label + ': ' + (ctx.raw == null ? '--' : ctx.raw.toFixed(1)) + '°C'
+          }
+        }
+      },
+      scales: {
+        x: { display: false },
+        y: {
+          grid: { color: '#2a332e', lineWidth: .5 },
+          ticks: { color: '#4a5550', font: { family: 'Share Tech Mono', size: 10 }, callback: v => v + '°' },
+          border: { display: false }
+        }
+      }
+    }
+  });
+
+  // Make canvas fill its flex parent
+  new ResizeObserver(() => chart.resize()).observe(canvas.parentElement);
+
+  // ── Data helpers ──────────────────────────────────────────────────────────────
+  function pushData(s, val) {
+    const ds = chart.data.datasets[SENSORS.indexOf(s)];
+    ds.data.push(val);
+    if (ds.data.length > MAX_PTS) ds.data.shift();
+    chart.update('none');
+  }
+
+  function updateCard(s, temp, extra) {
+    const t = parseFloat(temp);
+    document.getElementById('val-' + s).innerHTML = t.toFixed(1) + '<span class="unit">°C</span>';
+    if (extra) document.getElementById('sub-' + s).textContent = extra;
+    const pct = Math.min(100, Math.max(0, ((t - 0) / 80) * 100));
+    document.getElementById('bar-' + s).style.width = pct + '%';
+  }
+
+  function focusSensor(s) {
+    SENSORS.forEach(k => document.getElementById('card-' + k).classList.remove('active'));
+    document.getElementById('card-' + s).classList.add('active');
+  }
+
+  function toggleLine(s) {
+    visible[s] = !visible[s];
+    const ds = chart.data.datasets[SENSORS.indexOf(s)];
+    ds.borderColor     = visible[s] ? COLORS[s]         : '#2a332e';
+    ds.backgroundColor = visible[s] ? COLORS[s] + '22'  : 'transparent';
+    chart.update('none');
+  }
+
+  // ── Serial log ────────────────────────────────────────────────────────────────
+  function addLog(raw, cls) {
+    const log = document.getElementById('log');
+    const now = new Date();
+    const ts  = now.toTimeString().slice(0, 8) + '.' + String(now.getMilliseconds()).padStart(3, '0');
+    const line = document.createElement('div');
+    line.className = 'log-line';
+    line.innerHTML  = '<span class="log-time">' + ts + '</span>'
+                    + '<span class="log-data ' + (cls || '') + '">' + raw + '</span>';
+    log.appendChild(line);
+    if (log.children.length > 200) log.removeChild(log.firstChild);
+    log.scrollTop = log.scrollHeight;
+  }
+
+  function clearLog() { document.getElementById('log').innerHTML = ''; }
+
+  // ── Line parser ───────────────────────────────────────────────────────────────
+  // Parses: DHT11:25.3,DS18B20:25.1,NTC:24.8,LM35:25.0,HUM:55
+  function parseLine(line) {
+    line = line.trim();
+    if (!line) return;
+    addLog(line);
+
+    const parts = {};
+    line.split(',').forEach(p => {
+      const [k, v] = p.split(':');
+      if (k && v) parts[k.trim().toUpperCase()] = parseFloat(v.trim());
+    });
+
+    if (parts['DHT11']   !== undefined) { updateCard('dht',  parts['DHT11'],   parts['HUM'] !== undefined ? 'Humidity: ' + parts['HUM'].toFixed(0) + '%' : null); pushData('dht',  parts['DHT11']);   }
+    if (parts['DS18B20'] !== undefined) { updateCard('ds18', parts['DS18B20'], '1-Wire precision');   pushData('ds18', parts['DS18B20']); }
+    if (parts['NTC']     !== undefined) { updateCard('ntc',  parts['NTC'],     'Thermistor');         pushData('ntc',  parts['NTC']);     }
+    if (parts['LM35']    !== undefined) { updateCard('lm35', parts['LM35'],    'Analog linear');      pushData('lm35', parts['LM35']);    }
+
+    frames++;
+    rateCount++;
+    document.getElementById('frames-val').textContent = frames;
+  }
+
+  // ── Web Serial API ────────────────────────────────────────────────────────────
+  // https://developer.mozilla.org/en-US/docs/Web/API/Web_Serial_API
+  async function connectSerial() {
+    if (!('serial' in navigator)) {
+      addLog('[ERROR] Web Serial not supported. Use Chrome or Edge 89+.', 'err');
+      addLog('[DEMO]  Starting simulation mode instead...', 'warn');
+      startDemo();
+      return;
+    }
+    try {
+      port = await navigator.serial.requestPort();
+      const baud = parseInt(document.getElementById('baud').value);
+      await port.open({ baudRate: baud });
+      setConnected(true, 'USB Serial @ ' + baud);
+      addLog('[INFO] Connected at ' + baud + ' baud', 'ok');
+      readLoop();
+    } catch (e) {
+      addLog('[ERROR] ' + e.message, 'err');
+    }
+  }
+
+  async function readLoop() {
+    const decoder = new TextDecoder();
+    let buf = '';
+    try {
+      while (port && port.readable) {
+        reader = port.readable.getReader();
+        while (true) {
+          const { value, done } = await reader.read();
+          if (done) { reader.releaseLock(); break; }
+          buf += decoder.decode(value);
+          let nl;
+          while ((nl = buf.indexOf('\n')) !== -1) {
+            parseLine(buf.slice(0, nl));
+            buf = buf.slice(nl + 1);
+          }
+        }
+      }
+    } catch (e) { addLog('[ERROR] Read error: ' + e.message, 'err'); }
+  }
+
+  async function disconnectSerial() {
+    stopDemo();
+    if (reader) { try { await reader.cancel(); } catch (_) {} reader = null; }
+    if (port)   { try { await port.close();    } catch (_) {} port   = null; }
+    setConnected(false);
+    addLog('[INFO] Disconnected.', 'warn');
+  }
+
+  // ── Connection state UI ───────────────────────────────────────────────────────
+  function setConnected(on, label) {
+    document.getElementById('dot').className = 'status-dot' + (on ? ' connected' : '');
+    document.getElementById('ctrl-connect').style.display   = on ? 'none' : 'flex';
+    document.getElementById('ctrl-connected').style.display = on ? 'flex' : 'none';
+    if (label) document.getElementById('port-label').textContent = label;
+    if (on && !startTime) {
+      startTime = Date.now();
+      upTimer = setInterval(updateFooter, 1000);
+    } else if (!on && upTimer) {
+      clearInterval(upTimer); upTimer = null; startTime = null;
+    }
+  }
+
+  function updateFooter() {
+    if (!startTime) return;
+    const s   = Math.floor((Date.now() - startTime) / 1000);
+    const h   = String(Math.floor(s / 3600)).padStart(2, '0');
+    const m   = String(Math.floor((s % 3600) / 60)).padStart(2, '0');
+    const sec = String(s % 60).padStart(2, '0');
+    document.getElementById('uptime-val').textContent = h + ':' + m + ':' + sec;
+    document.getElementById('rate-val').textContent   = rateCount.toFixed(0) + ' Hz';
+    rateCount = 0;
+  }
+
+  // ── Simulation / demo mode ────────────────────────────────────────────────────
+  let demoBase = { dht: 24.5, ds18: 24.2, ntc: 23.8, lm35: 25.1 };
+  let demoHum  = 52;
+
+  function startDemo() {
+    setConnected(true, 'SIMULATION MODE');
+    addLog('[DEMO] Generating synthetic sensor data...', 'warn');
+    demoPaused = false;
+    demoTimer = setInterval(() => {
+      if (demoPaused) return;
+      SENSORS.forEach(s => {
+        demoBase[s] += (Math.random() - .5) * 0.4;
+        demoBase[s]  = Math.max(15, Math.min(45, demoBase[s]));
+      });
+      demoHum += (Math.random() - .5) * 1.2;
+      demoHum  = Math.max(30, Math.min(90, demoHum));
+      parseLine(
+        'DHT11:'   + demoBase.dht.toFixed(1)  +
+        ',DS18B20:' + demoBase.ds18.toFixed(1) +
+        ',NTC:'     + demoBase.ntc.toFixed(1)  +
+        ',LM35:'    + demoBase.lm35.toFixed(1) +
+        ',HUM:'     + demoHum.toFixed(0)
+      );
+    }, 1000);
+  }
+
+  function stopDemo() {
+    if (demoTimer) { clearInterval(demoTimer); demoTimer = null; }
+  }
+
+  function toggleDemo() {
+    demoPaused = !demoPaused;
+    document.getElementById('btn-demo').innerHTML = demoPaused
+      ? '<i class="ti ti-player-play"></i> RESUME'
+      : '<i class="ti ti-player-pause"></i> PAUSE';
+  }
+
+  // ── Boot ──────────────────────────────────────────────────────────────────────
+  addLog('[SYSTEM] ESP32 Sensor Monitor ready.', 'ok');
+  addLog('[SYSTEM] Click CONNECT to open a serial port (Chrome / Edge only).', '');
+  addLog('[FORMAT] DHT11:XX.X,DS18B20:XX.X,NTC:XX.X,LM35:XX.X,HUM:XX', '');
+</script>
+</body>
+</html>
