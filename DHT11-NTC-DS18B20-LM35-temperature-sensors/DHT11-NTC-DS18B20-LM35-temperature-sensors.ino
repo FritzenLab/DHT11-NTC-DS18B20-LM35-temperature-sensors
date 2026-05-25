@@ -12,8 +12,10 @@ uint64_t ds18b20addr;
 bool ds18b20Found = false;
 
 unsigned long ledTimer = 0;
-unsigned long dhtTiming = 0;
-const int elapsedDHT11 = 5000;
+unsigned long sensorsTiming = 0;
+unsigned long printTiming = 0;
+const int elapsedPrint = 5000;
+const int elapsedSensors = 2000;
 const int elapsedLed = 300;
 bool ledStatus= false;
 float LM35 = 0.00;
@@ -21,7 +23,6 @@ float NTC = 0.00;
 float DHT11read = 0;
 float DS18B20 = 0;
 
-//3380 from here https://www.tme.eu/Document/9d2eb9f3eda897a378e818dbe183c915/NTCM-10K-B3380.pdf 
 // 3950 from here https://www.gotronic.fr/pj2-mf52type-1554.pdf
 const double beta = 3950.0; 
 const double r0 = 10000.0;
@@ -78,15 +79,28 @@ void blinkLED(){
   }
 }
 float readLM35(void){
-
   float total = 0;
-  for(int i = 0; i < 16; i++){
-    analogReadMilliVolts(A0); // dummy read
-    delayMicroseconds(50);
+  int samples = 20;
+
+  for(int i = 0; i < samples; i++){
+    // 1. Force a read on A1 first to intentionally exhaust any trapped 
+    // cross-channel voltage coupling between A1 and A0
+    analogReadMilliVolts(A1); 
+    delayMicroseconds(200);
+
+    // 2. Perform two dummy reads on A0 to let the ADC's internal 
+    // sampling capacitor fully stabilize to the LM35's actual voltage
+    analogReadMilliVolts(A0);
+    delayMicroseconds(100);
+    analogReadMilliVolts(A0);
+    delayMicroseconds(100);
+    
+    // 3. Now collect the true, unpolluted sample
     total += analogReadMilliVolts(A0);
-    delay(10);
+    delay(5); 
   }
-  long mv = total / 16.00;
+  
+  long mv = total / (float)samples;
   return mv / 10.00; // LM35 = 10mV per degree C
 }
 float readNTC(void){
@@ -140,7 +154,7 @@ void setup() {
   
   // put your setup code here, to run once:
   analogReadResolution(12);
-  analogSetPinAttenuation(A0, ADC_0db);   // LM35
+  analogSetPinAttenuation(A0, ADC_11db);   // LM35
   analogSetPinAttenuation(A1, ADC_11db);  // NTC
   pinMode(LED, OUTPUT);
   dht.begin();
@@ -161,7 +175,8 @@ void loop() {
   // put your main code here, to run repeatedly:
   blinkLED(); // blink the LED for fun       
   
-  if(millis() - dhtTiming > elapsedDHT11){ // read DHT11
+  if(millis() - sensorsTiming > elapsedSensors){ // read DHT11
+    sensorsTiming += elapsedSensors;
     LM35= readLM35();
     NTC= readNTC();
     DS18B20 = readDS18B20(); 
@@ -169,18 +184,15 @@ void loop() {
     smoothNTC= tempNTC.update(NTC);
     smoothDS18B20= tempDS.update(DS18B20);
 
-    dhtTiming += elapsedDHT11;
     DHT11read = readDHT11();
-    smoothDHT11= tempDHT.update(DHT11read);    
+    smoothDHT11= tempDHT.update(DHT11read);     
+  }
+  if(millis() - printTiming > elapsedPrint){ // read DHT11
+    printTiming += elapsedPrint;
 
     char buf[80];
     snprintf(buf, sizeof(buf), "LM35:%.2f,NTC:%.2f,DS18B20:%.2f,DHT11:%.2f",
      smoothLM35, smoothNTC, smoothDS18B20, smoothDHT11);
     Serial.println(buf);
-  }
-  
-
-    
-  
-  
+  }  
 }
