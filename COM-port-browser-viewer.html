@@ -10,16 +10,16 @@
   <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Rajdhani:wght@400;500;600&display=swap" rel="stylesheet">
   <style>
     :root {
-      --bg: #0d0f0e;
-      --surface: #141916;
-      --card: #1a1f1d;
+      --bg: #ffffff;
+      --surface: #ffffff;
+      --card: #ffffff;
       --border: #2a332e;
       --accent: #3ddc84;
       --accent2: #00bcd4;
       --warn: #ffb300;
       --danger: #ef5350;
       --muted: #4a5550;
-      --text: #c8d8cc;
+      --text: #c000000;
       --text2: #6b8070;
       --mono: 'Share Tech Mono', monospace;
       --sans: 'Rajdhani', sans-serif;
@@ -28,7 +28,7 @@
 
     html, body {
       height: 100%;
-      background: #080a09;
+      background: #ffffff;
       display: flex;
       align-items: center;
       justify-content: center;
@@ -124,7 +124,7 @@
       background: var(--sensor-color, var(--muted));
     }
     .sensor-card:hover { border-color: var(--sensor-color, var(--muted)); }
-    .sensor-card.active { border-color: var(--sensor-color, var(--accent)); background: #1e2622; }
+    .sensor-card.active { border-color: var(--sensor-color, var(--accent)); background: #fffdd0; }
 
     .sensor-name { font-size: 11px; letter-spacing: 1.5px; text-transform: uppercase; color: var(--text2); font-family: var(--mono); margin-bottom: 4px; }
     .sensor-value { font-family: var(--mono); font-size: 22px; font-weight: 400; color: var(--sensor-color, var(--text)); line-height: 1; }
@@ -337,6 +337,9 @@
       scales: {
         x: { display: false },
         y: {
+          min: undefined,
+          max: undefined,
+          grace: '10%',  // https://www.chartjs.org/docs/latest/axes/cartesian/linear.html#grace
           grid: { color: '#2a332e', lineWidth: .5 },
           ticks: { color: '#4a5550', font: { family: 'Share Tech Mono', size: 10 }, callback: v => v + '°' },
           border: { display: false }
