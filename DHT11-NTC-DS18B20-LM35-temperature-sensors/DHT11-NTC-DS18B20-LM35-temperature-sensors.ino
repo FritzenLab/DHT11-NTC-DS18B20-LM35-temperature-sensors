@@ -12,17 +12,15 @@ uint64_t ds18b20addr;
 bool ds18b20Found = false;
 
 unsigned long ledTimer = 0;
-unsigned long sensorsTiming = 0;
 unsigned long dhtTiming = 0;
-unsigned long printTiming = 0;
-const int elapsedSensors = 2500;
 const int elapsedDHT11 = 5000;
 const int elapsedLed = 300;
-const int elapsedPrint = 5000;
 bool ledStatus= false;
-long LM35 = 0;
-long NTC = 0;
-float DS18B20, DHT11read = 0;
+float LM35 = 0.00;
+float NTC = 0.00;
+float DHT11read = 0;
+float DS18B20 = 0;
+
 //3380 from here https://www.tme.eu/Document/9d2eb9f3eda897a378e818dbe183c915/NTCM-10K-B3380.pdf 
 // 3950 from here https://www.gotronic.fr/pj2-mf52type-1554.pdf
 const double beta = 3950.0; 
@@ -79,27 +77,27 @@ void blinkLED(){
     }
   }
 }
-long readLM35(void){
+float readLM35(void){
 
-  long total = 0;
+  float total = 0;
   for(int i = 0; i < 16; i++){
     analogReadMilliVolts(A0); // dummy read
     delayMicroseconds(50);
     total += analogReadMilliVolts(A0);
     delay(10);
   }
-  long mv = total / 16;
-  return mv / 10; // LM35 = 10mV per degree C
+  long mv = total / 16.00;
+  return mv / 10.00; // LM35 = 10mV per degree C
 }
-long readNTC(void){
+float readNTC(void){
   delayMicroseconds(50);
-  double v = analogReadMilliVolts(A1) / 1000.0;
-  double rt = (vcc * R) / v - R;
-  double tempK = 1.0 / (
+  float v = analogReadMilliVolts(A1) / 1000.0;
+  float rt = (vcc * R) / v - R;
+  float tempK = 1.0 / (
     (1.0 / t0) + (1.0 / beta) * log(rt / r0)
   );
-  double tempC = tempK - 273.15;
-  long ntcrawfinal = tempC;
+  float tempC = tempK - 273.15;
+  float ntcrawfinal = tempC;
   return ntcrawfinal;
 }
 float readDS18B20(){
@@ -161,30 +159,28 @@ void setup() {
 
 void loop() {
   // put your main code here, to run repeatedly:
-  blinkLED(); // blink the LED for fun
-
-  if(millis() - sensorsTiming > elapsedSensors){ // read three of the sensors
-    sensorsTiming += elapsedSensors;
-
+  blinkLED(); // blink the LED for fun       
+  
+  if(millis() - dhtTiming > elapsedDHT11){ // read DHT11
     LM35= readLM35();
     NTC= readNTC();
     DS18B20 = readDS18B20(); 
-    smoothLM35= (float)tempLM.update(LM35);
-    smoothNTC= (float)tempNTC.update(NTC);
-    smoothDS18B20= tempDS.update(DS18B20);    
-  }
-  if(millis() - dhtTiming > elapsedDHT11){ // read DHT11
+    smoothLM35= tempLM.update(LM35);
+    smoothNTC= tempNTC.update(NTC);
+    smoothDS18B20= tempDS.update(DS18B20);
+
     dhtTiming += elapsedDHT11;
     DHT11read = readDHT11();
     smoothDHT11= tempDHT.update(DHT11read);    
-  }
-  if(millis() - printTiming > elapsedPrint){ // print everything to Serial
-    printTiming += elapsedPrint;
 
     char buf[80];
-    snprintf(buf, sizeof(buf), "LM35:%.2f,NTC:%.2f,DS18b20:%.2f,DHT11:%.2f",
+    snprintf(buf, sizeof(buf), "LM35:%.2f,NTC:%.2f,DS18B20:%.2f,DHT11:%.2f",
      smoothLM35, smoothNTC, smoothDS18B20, smoothDHT11);
     Serial.println(buf);
   }
+  
+
+    
+  
   
 }

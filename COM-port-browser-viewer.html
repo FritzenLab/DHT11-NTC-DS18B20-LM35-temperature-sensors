@@ -524,7 +524,7 @@
           buf += decoder.decode(value);
           let nl;
           while ((nl = buf.indexOf('\n')) !== -1) {
-            parseLine(buf.slice(0, nl));
+            parseLine(buf.slice(0, nl).replace('\r', ''));
             buf = buf.slice(nl + 1);
           }
         }
