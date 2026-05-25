@@ -295,7 +295,7 @@
 
   let port = null, reader = null;
   let demoTimer = null, demoPaused = false;
-  let frames = 0, startTime = null, upTimer = null, rateCount = 0;
+  let frames = 0, startTime = null, upTimer = null, rateTimes  = [];
   let visible = { dht: true, ds18: true, ntc: true, lm35: true };
 
   // ── Chart setup ──────────────────────────────────────────────────────────────
@@ -415,7 +415,7 @@
     if (parts['LM35']    !== undefined) { updateCard('lm35', parts['LM35'],    'Analog linear');      pushData('lm35', parts['LM35']);    }
 
     frames++;
-    rateCount++;
+    rateTimes.push(Date.now());
     document.getElementById('frames-val').textContent = frames;
   }
 
@@ -489,8 +489,17 @@
     const m   = String(Math.floor((s % 3600) / 60)).padStart(2, '0');
     const sec = String(s % 60).padStart(2, '0');
     document.getElementById('uptime-val').textContent = h + ':' + m + ':' + sec;
-    document.getElementById('rate-val').textContent   = rateCount.toFixed(0) + ' Hz';
-    rateCount = 0;
+
+    // Rolling-average Hz: count frames received in the last RATE_WINDOW ms
+    // and divide by the window duration — handles any frequency gracefully.
+    // https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Date/now
+    const RATE_WINDOW = 30000; // 30-second window (covers 6+ cycles at 0.2 Hz)
+    const cutoff = Date.now() - RATE_WINDOW;
+    rateTimes = rateTimes.filter(t => t > cutoff); // drop old entries
+    const hz = rateTimes.length > 1
+      ? (rateTimes.length - 1) / ((Date.now() - rateTimes[0]) / 1000)
+      : 0;
+    document.getElementById('rate-val').textContent = hz.toFixed(2) + ' Hz';
   }
 
   // ── Simulation / demo mode ────────────────────────────────────────────────────
