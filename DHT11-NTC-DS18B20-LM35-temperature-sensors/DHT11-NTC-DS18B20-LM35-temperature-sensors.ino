@@ -171,12 +171,12 @@ void loop() {
     DS18B20 = readDS18B20(); 
     smoothLM35= (float)tempLM.update(LM35);
     smoothNTC= (float)tempNTC.update(NTC);
-    smoothDS18B20= tempDS.update(DS18B20);
+    smoothDS18B20= tempDS.update(DS18B20);    
   }
   if(millis() - dhtTiming > elapsedDHT11){ // read DHT11
     dhtTiming += elapsedDHT11;
     DHT11read = readDHT11();
-    smoothDHT11= tempDHT.update(DHT11read);
+    smoothDHT11= tempDHT.update(DHT11read);    
   }
   if(millis() - printTiming > elapsedPrint){ // print everything to Serial
     printTiming += elapsedPrint;

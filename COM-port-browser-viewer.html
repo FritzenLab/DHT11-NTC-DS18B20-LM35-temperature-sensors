@@ -213,30 +213,95 @@
 
   <div class="main">
     <div class="sidebar">
-      <div class="sensor-card active" id="card-dht" style="--sensor-color:#3ddc84" onclick="focusSensor('dht')">
-        <div class="sensor-name">lLM35</div>
-        <div class="sensor-value" id="val-dht">--<span class="unit">°C</span></div>
-        <div class="sensor-sub" id="sub-dht">Temperature ºC</div>
-        <div class="sensor-bar"><div class="sensor-bar-fill" id="bar-dht" style="width:0%"></div></div>
+
+      <div class="sensor-card active"
+           id="card-lm35"
+           style="--sensor-color:#3ddc84"
+           onclick="focusSensor('lm35')">
+
+        <div class="sensor-name">LM35</div>
+        <div class="sensor-value" id="val-lm35">
+          --<span class="unit">°C</span>
+        </div>
+
+        <div class="sensor-sub" id="sub-lm35">
+          Temperature ºC
+        </div>
+
+        <div class="sensor-bar">
+          <div class="sensor-bar-fill"
+               id="bar-lm35"
+               style="width:0%">
+          </div>
+        </div>
       </div>
-      <div class="sensor-card" id="card-ds18" style="--sensor-color:#00bcd4" onclick="focusSensor('ds18')">
+
+      <div class="sensor-card"
+           id="card-ntc"
+           style="--sensor-color:#00bcd4"
+           onclick="focusSensor('ntc')">
+
         <div class="sensor-name">NTC 10k</div>
-        <div class="sensor-value" id="val-ds18">--<span class="unit">°C</span></div>
-        <div class="sensor-sub" id="sub-ds18">Temperature ºC</div>
-        <div class="sensor-bar"><div class="sensor-bar-fill" id="bar-ds18" style="width:0%"></div></div>
+        <div class="sensor-value" id="val-ntc">
+          --<span class="unit">°C</span>
+        </div>
+
+        <div class="sensor-sub" id="sub-ntc">
+          Temperature ºC
+        </div>
+
+        <div class="sensor-bar">
+          <div class="sensor-bar-fill"
+               id="bar-ntc"
+               style="width:0%">
+          </div>
+        </div>
       </div>
-      <div class="sensor-card" id="card-ntc" style="--sensor-color:#ffb300" onclick="focusSensor('ntc')">
-        <div class="sensor-name">DS18b20</div>
-        <div class="sensor-value" id="val-ntc">--<span class="unit">°C</span></div>
-        <div class="sensor-sub" id="sub-ntc">Temperature ºC</div>
-        <div class="sensor-bar"><div class="sensor-bar-fill" id="bar-ntc" style="width:0%"></div></div>
+
+      <div class="sensor-card"
+           id="card-ds18"
+           style="--sensor-color:#ffb300"
+           onclick="focusSensor('ds18')">
+
+        <div class="sensor-name">DS18B20</div>
+        <div class="sensor-value" id="val-ds18">
+          --<span class="unit">°C</span>
+        </div>
+
+        <div class="sensor-sub" id="sub-ds18">
+          Temperature ºC
+        </div>
+
+        <div class="sensor-bar">
+          <div class="sensor-bar-fill"
+               id="bar-ds18"
+               style="width:0%">
+          </div>
+        </div>
       </div>
-      <div class="sensor-card" id="card-lm35" style="--sensor-color:#ef5350" onclick="focusSensor('lm35')">
+
+      <div class="sensor-card"
+           id="card-dht"
+           style="--sensor-color:#ef5350"
+           onclick="focusSensor('dht')">
+
         <div class="sensor-name">DHT11</div>
-        <div class="sensor-value" id="val-lm35">--<span class="unit">°C</span></div>
-        <div class="sensor-sub" id="sub-lm35">Temperature ºC</div>
-        <div class="sensor-bar"><div class="sensor-bar-fill" id="bar-lm35" style="width:0%"></div></div>
+        <div class="sensor-value" id="val-dht">
+          --<span class="unit">°C</span>
+        </div>
+
+        <div class="sensor-sub" id="sub-dht">
+          Temperature ºC
+        </div>
+
+        <div class="sensor-bar">
+          <div class="sensor-bar-fill"
+               id="bar-dht"
+               style="width:0%">
+          </div>
+        </div>
       </div>
+
     </div>
 
     <div class="panel">
@@ -244,10 +309,27 @@
         <div class="chart-header">
           <span class="chart-title">Signal history (60 seconds)</span>
           <div class="chart-legend">
-            <div class="legend-item" onclick="toggleLine('dht')"><div class="legend-dot" style="background:#3ddc84"></div>DHT11</div>
-            <div class="legend-item" onclick="toggleLine('ds18')"><div class="legend-dot" style="background:#00bcd4"></div>DS18B20</div>
-            <div class="legend-item" onclick="toggleLine('ntc')"><div class="legend-dot" style="background:#ffb300"></div>NTC</div>
-            <div class="legend-item" onclick="toggleLine('lm35')"><div class="legend-dot" style="background:#ef5350"></div>LM35</div>
+
+            <div class="legend-item" onclick="toggleLine('lm35')">
+              <div class="legend-dot" style="background:#3ddc84"></div>
+              LM35
+            </div>
+
+            <div class="legend-item" onclick="toggleLine('ntc')">
+              <div class="legend-dot" style="background:#00bcd4"></div>
+              NTC
+            </div>
+
+            <div class="legend-item" onclick="toggleLine('ds18')">
+              <div class="legend-dot" style="background:#ffb300"></div>
+              DS18B20
+            </div>
+
+            <div class="legend-item" onclick="toggleLine('dht')">
+              <div class="legend-dot" style="background:#ef5350"></div>
+              DHT11
+            </div>
+
           </div>
         </div>
         <canvas id="chart"></canvas>
@@ -273,8 +355,14 @@
 
 <script>
  
-  const COLORS  = { dht: '#3ddc84', ds18: '#00bcd4', ntc: '#ffb300', lm35: '#ef5350' };
-  const SENSORS = ['dht', 'ds18', 'ntc', 'lm35'];
+  const COLORS  = {
+    lm35: '#3ddc84',
+    ntc: '#00bcd4',
+    ds18: '#ffb300',
+    dht: '#ef5350'
+  };
+
+  const SENSORS = ['lm35', 'ntc', 'ds18', 'dht'];
   const MAX_PTS = 60;
 
   let port = null, reader = null;
@@ -381,7 +469,7 @@
   function clearLog() { document.getElementById('log').innerHTML = ''; }
 
   // ── Line parser ───────────────────────────────────────────────────────────────
-  // Parses: DHT11:25.3,DS18B20:25.1,NTC:24.8,LM35:25.0,HUM:55
+  // Parses: LM35:25.0,NTC:24.8,DS18B20:25.1,DHT11:25.3
   function parseLine(line) {
     line = line.trim();
     if (!line) return;
@@ -393,10 +481,10 @@
       if (k && v) parts[k.trim().toUpperCase()] = parseFloat(v.trim());
     });
 
-    if (parts['DHT11']   !== undefined) { updateCard('dht',  parts['DHT11'],   parts['HUM'] !== undefined ? 'Humidity: ' + parts['HUM'].toFixed(0) + '%' : null); pushData('dht',  parts['DHT11']);   }
-    if (parts['DS18B20'] !== undefined) { updateCard('ds18', parts['DS18B20'], '1-Wire precision');   pushData('ds18', parts['DS18B20']); }
-    if (parts['NTC']     !== undefined) { updateCard('ntc',  parts['NTC'],     'Thermistor');         pushData('ntc',  parts['NTC']);     }
-    if (parts['LM35']    !== undefined) { updateCard('lm35', parts['LM35'],    'Analog linear');      pushData('lm35', parts['LM35']);    }
+    if (parts['LM35']   !== undefined) { updateCard('lm35',  parts['LM35'], 'Temperature ºC'); pushData('lm35',  parts['LM35']);   }
+    if (parts['NTC'] !== undefined) { updateCard('ntc', parts['NTC'], 'Temperature ºC');   pushData('ntc', parts['NTC']); }
+    if (parts['DS18B20']     !== undefined) { updateCard('ds18',  parts['DS18B20'],     'Temperature ºC');         pushData('ds18',  parts['DS18B20']);     }
+    if (parts['DHT11']    !== undefined) { updateCard('dht', parts['DHT11'],    'Temperature ºC');      pushData('dht', parts['DHT11']);    }
 
     frames++;
     rateTimes.push(Date.now());
@@ -503,12 +591,11 @@
       demoHum += (Math.random() - .5) * 1.2;
       demoHum  = Math.max(30, Math.min(90, demoHum));
       parseLine(
-        'DHT11:'   + demoBase.dht.toFixed(1)  +
-        ',DS18B20:' + demoBase.ds18.toFixed(1) +
-        ',NTC:'     + demoBase.ntc.toFixed(1)  +
-        ',LM35:'    + demoBase.lm35.toFixed(1) +
-        ',HUM:'     + demoHum.toFixed(0)
-      );
+        'LM35:'   + demoBase.lm35.toFixed(1)  +
+        ',NTC:' + demoBase.ntc.toFixed(1) +
+        ',DS18B20:'     + demoBase.ds18.toFixed(1)  +
+        ',DHT11:'    + demoBase.dht.toFixed(1) 
+        );
     }, 1000);
   }
 
@@ -526,7 +613,7 @@
   // ── Boot ──────────────────────────────────────────────────────────────────────
   addLog('[SYSTEM] ESP32 Sensor Monitor ready.', 'ok');
   addLog('[SYSTEM] Click CONNECT to open a serial port (Chrome / Edge only).', '');
-  addLog('[FORMAT] DHT11:XX.X,DS18B20:XX.X,NTC:XX.X,LM35:XX.X,HUM:XX', '');
+  addLog('[FORMAT] LM35:XX.X,NTC:XX.X,DS18B20:XX.X,DHT11:XX.X', '');
 </script>
 </body>
 </html>
