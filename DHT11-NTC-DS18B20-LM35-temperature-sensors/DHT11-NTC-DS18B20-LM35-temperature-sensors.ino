@@ -110,12 +110,18 @@ float readDS18B20(){
   }
   float temp;
   ds.request();
-  delay(750);
+  delay(100);
   uint8_t err = ds.getTemp(ds18b20addr, temp);
   if(err){
     return 0;
+  }else{
+    if(temp > -20 && temp < 80){
+      return temp;
+    }else{
+      return 0;
+    }    
   }
-  return temp;
+  
 }
 float readDHT11(){
   float dht11raw =  dht.readTemperature();
