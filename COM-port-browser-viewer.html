@@ -14,12 +14,12 @@
       --surface: #ffffff;
       --card: #ffffff;
       --border: #2a332e;
-      --accent: #3ddc84;
+      --accent: #0b6634;
       --accent2: #00bcd4;
       --warn: #ffb300;
       --danger: #ef5350;
       --muted: #4a5550;
-      --text: #c000000;
+      --text: #000000;
       --text2: #6b8070;
       --mono: 'Share Tech Mono', monospace;
       --sans: 'Rajdhani', sans-serif;
@@ -86,7 +86,7 @@
     }
     select:hover, button:hover { border-color: var(--accent); }
     select option { background: var(--card); }
-    button.primary { background: var(--accent); color: #0d1a12; border-color: var(--accent); font-weight: 700; letter-spacing: .5px; }
+    button.primary { background: var(--accent); color: #ffffff; border-color: var(--accent); font-weight: 700; letter-spacing: .5px; }
     button.primary:hover { background: #5dff9a; }
     button.danger { border-color: var(--danger); color: var(--danger); }
     button.danger:hover { background: #1a0a0a; }
@@ -363,7 +363,7 @@
     const t = parseFloat(temp);
     document.getElementById('val-' + s).innerHTML = t.toFixed(1) + '<span class="unit">°C</span>';
     if (extra) document.getElementById('sub-' + s).textContent = extra;
-    const pct = Math.min(100, Math.max(0, ((t - 0) / 80) * 100));
+    const pct = Math.min(100, Math.max(0, ((t - 0) / 50) * 100)); // 0-50ºC bar
     document.getElementById('bar-' + s).style.width = pct + '%';
   }
 
